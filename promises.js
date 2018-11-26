@@ -16,7 +16,6 @@ var p2 = new Promise((resolve, reject) => {
 var p3 = new Promise((resolve, reject) => {
   setTimeout(resolve, 300, "300");
 });
-
  Promise.race([p1, p2, p3]).then(function(value) {
   console.log(value); //100
 }).finally(function() { console.log("always") });
