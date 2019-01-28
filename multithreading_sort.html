@@ -1,0 +1,131 @@
+<script type="text/javascript">
+	console.log( navigator.hardwareConcurrency+" threads")
+
+var blob = new Blob([
+    `onmessage = function(e) { 
+
+function merge_sort(arr) {
+  let length = arr.length;        
+  if (length < 2) {
+    return arr
+  }
+ let middle = Math.floor(length/2)
+ let left = arr.slice(0, middle)     
+ let right = arr.slice(middle)     
+ return merge(merge_sort(left), merge_sort(right))
+}
+
+function merge(left, right) {
+  let result = [];
+  let i=0;
+  let j=0;
+  while(i < left.length && j < right.length) {
+    if(left[i] < right[j]) {
+      result.push(left[i]) ;
+      i++;       
+    } else {                       
+      result.push(right[j]);
+      j++;
+    }
+  }
+  return result.concat(left.slice(i)).concat(right.slice(j))
+} 
+   if(e.data.job==='sort'){
+    postMessage(merge_sort(e.data.arr));
+}else{
+     postMessage(merge(e.data.arr[0],e.data.arr[1]))
+}
+    	 }`]);
+
+
+
+var blobURL = window.URL.createObjectURL(blob);
+
+var v1 = new Worker(blobURL);
+var v2 = new Worker(blobURL);
+var v3 = new Worker(blobURL);
+var v4 = new Worker(blobURL);
+   
+   function merge(left, right) {
+  let result = [];
+  let i=0;
+  let j=0;
+  while(i < left.length && j < right.length) {
+    if(left[i] < right[j]) {
+      result.push(left[i]) ;
+      i++;       
+    } else {                       
+      result.push(right[j]);
+      j++;
+    }
+  }
+  return result.concat(left.slice(i)).concat(right.slice(j))
+}
+
+var arr=Array.from({ length: 20000000 }, ()=>Math.floor(Math.random() * 50000000)); 
+var half1=[]
+var half2=[]
+var half_1=[]
+var half_2=[]
+var half_3=[]
+var half_4=[]
+let middle = Math.floor(arr.length/2)
+half1= arr.slice(0, middle)     
+half2 = arr.slice(middle)  
+
+let middlehalf1= Math.floor(half1.length/2)
+half_1= half1.slice(0, middlehalf1)     
+half_2 = half1.slice(middlehalf1)   
+
+let middlehalf2= Math.floor(half2.length/2)
+half_3= half2.slice(0, middlehalf2)     
+half_4 = half2.slice(middlehalf2)   
+var t0 = performance.now();
+
+  
+    
+    
+var p1=new Promise((resolve, reject) => {
+   v1.postMessage({job:'sort',arr:half_1});
+    v1.addEventListener('message', event => resolve(event.data));
+    v1.addEventListener('error', reject);
+  })
+var p2 =new Promise((resolve, reject) => {
+    v2.postMessage({job:'sort',arr:half_2});
+    v2.addEventListener('message', event => resolve(event.data));
+    v2.addEventListener('error', reject);
+  })
+var p3=new Promise((resolve, reject) => {
+   v3.postMessage({job:'sort',arr:half_3});
+    v3.addEventListener('message', event => resolve(event.data));
+    v3.addEventListener('error', reject);
+  })
+var p4 =new Promise((resolve, reject) => {
+    v4.postMessage({job:'sort',arr:half_4});
+    v4.addEventListener('message', event => resolve(event.data));
+    v4.addEventListener('error', reject);
+  })
+
+
+ Promise.all([p1,p2,p3,p4]).then(function(results){
+  //console.log( )
+  var p5 =new Promise((resolve, reject) => {
+    v1.addEventListener('message', event => resolve(event.data));
+    v1.addEventListener('error', reject);
+  })
+var p6 =new Promise((resolve, reject) => {
+    v2.addEventListener('message', event => resolve(event.data));
+    v2.addEventListener('error', reject);
+  })
+     v1.postMessage({job:'merge',arr:[results[0],results[1]]});
+    v2.postMessage({job:'merge',arr:[results[2],results[3]]});
+
+    Promise.all([p5,p6]).then(function(arrays){
+ merge(arrays[0],arrays[1])
+         var t1 = performance.now();
+    console.log(`merge_sort took ${(t1 - t0) / 1000} seconds`)
+    })
+ 
+   
+ } );
+</script>

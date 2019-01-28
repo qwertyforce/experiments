@@ -115,12 +115,11 @@ const partition = (arr, start, end) => {
       swap(arr, j, i)
     }
    }
-
   swap(arr, i + 1, end)
   return i + 1
 }
 
-var BigArray =Array.from({ length: 6000000 }, ()=>Math.floor(Math.random() * 50000000)); 
+var BigArray =Array.from({ length: 20000000 }, ()=>Math.floor(Math.random() * 50000000)); 
     // var t0 = performance.now();
     // bubble_sort(BigArray.slice(0))
     // var t1 = performance.now();
