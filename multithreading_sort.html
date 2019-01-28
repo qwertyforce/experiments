@@ -4,34 +4,38 @@
 var blob = new Blob([
     `onmessage = function(e) { 
 
-function merge_sort(arr) {
-  let length = arr.length;        
-  if (length < 2) {
-    return arr
-  }
- let middle = Math.floor(length/2)
- let left = arr.slice(0, middle)     
- let right = arr.slice(middle)     
- return merge(merge_sort(left), merge_sort(right))
+      function swap(arr,a,b){
+let temp=arr[a];
+arr[a]=arr[b];
+arr[b]=temp;  
 }
 
-function merge(left, right) {
-  let result = [];
-  let i=0;
-  let j=0;
-  while(i < left.length && j < right.length) {
-    if(left[i] < right[j]) {
-      result.push(left[i]) ;
-      i++;       
-    } else {                       
-      result.push(right[j]);
-      j++;
+const quick_sort = (arr, start, end) => {
+  if(start < end) {
+    let pivot = partition(arr, start, end)
+    quick_sort(arr, start, pivot - 1)
+    quick_sort(arr, pivot + 1, end)
+  } 
+}
+
+const partition = (arr, start, end) => { 
+ var pivotPosition =Math.floor(start + Math.random() * (end - start + 1));
+   swap(arr,pivotPosition,end) 
+  let i = start - 1
+  let j = start
+   for(j=start;j < end;j++){
+      if (arr[j] <=arr[end]) {
+      i++
+      swap(arr, j, i)
     }
-  }
-  return result.concat(left.slice(i)).concat(right.slice(j))
-} 
+   }
+  swap(arr, i + 1, end)
+  return i + 1
+}
    if(e.data.job==='sort'){
-    postMessage(merge_sort(e.data.arr));
+    var arr = new Uint32Array(e.data.arr)
+    quick_sort(arr,0,arr.length-1)
+    postMessage(arr.buffer,[arr.buffer]);
 }else{
      postMessage(merge(e.data.arr[0],e.data.arr[1]))
 }
@@ -47,22 +51,33 @@ var v3 = new Worker(blobURL);
 var v4 = new Worker(blobURL);
    
    function merge(left, right) {
-  let result = [];
+  let result = new Uint32Array(left.length+right.length);
   let i=0;
   let j=0;
   while(i < left.length && j < right.length) {
     if(left[i] < right[j]) {
-      result.push(left[i]) ;
+      result[i+j]=left[i] ;
       i++;       
     } else {                       
-      result.push(right[j]);
+       result[i+j]=right[j];
       j++;
     }
   }
-  return result.concat(left.slice(i)).concat(right.slice(j))
+  if(i===left.length && j<right.length){
+    for(var g=j;g<right.length;g++){
+     result[i+g]=right[g]
+    }
+  }
+  if(i<left.length && j===right.length){
+    for(var g=i;g<left.length;g++){
+     result[j+g]=left[g]
+    }
+  }
+
+  return result
 }
 
-var arr=Array.from({ length: 20000000 }, ()=>Math.floor(Math.random() * 50000000)); 
+var arr=Uint32Array.from({ length: 60000000 }, ()=>Math.floor(Math.random() * 50000000));
 var half1=[]
 var half2=[]
 var half_1=[]
@@ -82,49 +97,56 @@ half_3= half2.slice(0, middlehalf2)
 half_4 = half2.slice(middlehalf2)   
 var t0 = performance.now();
 
-  
+
     
     
 var p1=new Promise((resolve, reject) => {
-   v1.postMessage({job:'sort',arr:half_1});
+   v1.postMessage({job:'sort',arr:half_1.buffer},[half_1.buffer]);
     v1.addEventListener('message', event => resolve(event.data));
     v1.addEventListener('error', reject);
   })
 var p2 =new Promise((resolve, reject) => {
-    v2.postMessage({job:'sort',arr:half_2});
+    v2.postMessage({job:'sort',arr:half_2.buffer},[half_2.buffer]);
     v2.addEventListener('message', event => resolve(event.data));
     v2.addEventListener('error', reject);
   })
 var p3=new Promise((resolve, reject) => {
-   v3.postMessage({job:'sort',arr:half_3});
+   v3.postMessage({job:'sort',arr:half_3.buffer},[half_3.buffer]);
     v3.addEventListener('message', event => resolve(event.data));
     v3.addEventListener('error', reject);
   })
 var p4 =new Promise((resolve, reject) => {
-    v4.postMessage({job:'sort',arr:half_4});
+    v4.postMessage({job:'sort',arr:half_4.buffer},[half_4.buffer]);
     v4.addEventListener('message', event => resolve(event.data));
     v4.addEventListener('error', reject);
   })
 
 
  Promise.all([p1,p2,p3,p4]).then(function(results){
-  //console.log( )
-  var p5 =new Promise((resolve, reject) => {
-    v1.addEventListener('message', event => resolve(event.data));
-    v1.addEventListener('error', reject);
-  })
-var p6 =new Promise((resolve, reject) => {
-    v2.addEventListener('message', event => resolve(event.data));
-    v2.addEventListener('error', reject);
-  })
-     v1.postMessage({job:'merge',arr:[results[0],results[1]]});
-    v2.postMessage({job:'merge',arr:[results[2],results[3]]});
+  var arr1=new Uint32Array(results[0])
+  var arr2=new Uint32Array(results[1])
+  var arr3=new Uint32Array(results[2])
+  var arr4=new Uint32Array(results[3])
 
-    Promise.all([p5,p6]).then(function(arrays){
- merge(arrays[0],arrays[1])
-         var t1 = performance.now();
-    console.log(`merge_sort took ${(t1 - t0) / 1000} seconds`)
-    })
+  console.log( )
+ // merge(merge(arr1,arr2),merge(arr3,arr4)) 
+   var t1 = performance.now();
+     console.log(`merge_sort took ${(t1 - t0) / 1000} seconds`)
+//   var p5 =new Promise((resolve, reject) => {
+//     v1.addEventListener('message', event => resolve(event.data));
+//     v1.addEventListener('error', reject);
+//   })
+// var p6 =new Promise((resolve, reject) => {
+//     v2.addEventListener('message', event => resolve(event.data));
+//     v2.addEventListener('error', reject);
+//   })
+//      v1.postMessage({job:'merge',arr:[results[0],results[1]]});
+//     v2.postMessage({job:'merge',arr:[results[2],results[3]]});
+
+ //    Promise.all([p5,p6]).then(function(arrays){
+ // console.log(merge(arrays[0],arrays[1]))
+ //        
+ //    })
  
    
  } );
