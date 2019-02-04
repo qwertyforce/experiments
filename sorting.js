@@ -119,6 +119,40 @@ const partition = (arr, start, end) => {
   return i + 1
 }
 
+
+function buildHeap(arr) {
+    for (var i = Math.floor(arr.length / 2); i >= 0; i -= 1) {
+        heapify(arr, i,arr.length-1);
+    }
+}
+
+function heapify(arr, i,heap_length) {
+    var left = 2 * i + 1;
+    var right = 2 * i + 2;
+    var largest = i;
+    if (left < heap_length && arr[left] > arr[largest]) {
+        largest = left;
+    }
+    if (right < heap_length && arr[right] > arr[largest]) {
+        largest = right;
+    }
+    if (largest != i) {
+        swap(arr, i, largest);
+        heapify(arr, largest,heap_length);
+    }
+}
+
+function heap_sort(arr) {
+    buildHeap(arr);
+    var heap_length=arr.length;
+    for (var i = arr.length - 1; i > 0; i--) {
+        swap(arr, 0, i);
+        heap_length--;
+        heapify(arr, 0,heap_length);
+    }
+}
+
+
 var BigArray =Array.from({ length: 20000000 }, ()=>Math.floor(Math.random() * 50000000)); 
     // var t0 = performance.now();
     // bubble_sort(BigArray.slice(0))
@@ -152,6 +186,12 @@ var BigArray =Array.from({ length: 20000000 }, ()=>Math.floor(Math.random() * 50
     quick_sort2(BigArray.slice(0))
     var t1 = performance.now();
     console.log(`quick_sort2 took ${(t1 - t0) / 1000} seconds`)
+
+    var t0 = performance.now();
+    heap_sort(BigArray.slice(0))
+    var t1 = performance.now();
+    console.log(`heap_sort took ${(t1 - t0) / 1000} seconds`)
+
 
 
     
