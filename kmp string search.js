@@ -1,22 +1,17 @@
-function prefix_function(word) {
-  let patternTable = [0];
-  let prefixIndex = 0;
-  let suffixIndex = 1;
-
-  while (suffixIndex < word.length) {
-    if (word[prefixIndex] === word[suffixIndex]) {
-      patternTable[suffixIndex] = prefixIndex + 1;
-      suffixIndex += 1;
-      prefixIndex += 1;
-    } else if (prefixIndex === 0) {
-      patternTable[suffixIndex] = 0;
-      suffixIndex += 1;
-    } else {
-      prefixIndex = patternTable[prefixIndex - 1];
+function  compute_prefix_function(word){
+  var result=[0];
+    var k = 0;  
+  for (var i = 1; i < word.length; i++) { 
+    result[i]=0;
+    while ((k > 0) && (word[k] != word[i])){
+    k = result[k - 1]; 
+    } 
+    if (word[k] === word[i]){
+    result[i] = ++k;
     }
+    
   }
-
-  return patternTable;
+  return result;
 }
 
  function kmp(text, word) {
@@ -26,7 +21,7 @@ function prefix_function(word) {
   let matches=[]
   let textIndex = 0;
   let wordIndex = 0;
-  const patternTable = prefix_function(word);
+  const patternTable = compute_prefix_function(word);
 
   while (textIndex < text.length) {
     if (text[textIndex] === word[wordIndex]) {
