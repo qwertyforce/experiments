@@ -1,4 +1,4 @@
-class Queue { 
+class PriorityQueue { 
     constructor() 
     { 
         this.elements = []; 
