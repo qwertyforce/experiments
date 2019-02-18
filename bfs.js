@@ -76,7 +76,7 @@ return path.reverse()
 }
 
 
-var field=new Grid(10,10);   //11x11 actually(including 0)
+var field=new Grid(10,10);   
 field.walls.push({x:4,y:3})
 field.walls.push({x:4,y:4})
 field.walls.push({x:4,y:5})
