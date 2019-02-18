@@ -28,7 +28,7 @@ class Queue {
     }
 } 
 
-class SquareGrid{ 
+class Grid{ 
  constructor(width,height){
   this.width=width;
   this.height=height;
@@ -76,19 +76,19 @@ return path.reverse()
 }
 
 
-var Grid=new SquareGrid(10,10);
-Grid.walls.push({x:4,y:3})
-Grid.walls.push({x:4,y:4})
-Grid.walls.push({x:4,y:5})
-Grid.walls.push({x:4,y:6})
-Grid.walls.push({x:4,y:7})
-Grid.walls.push({x:5,y:4})
-Grid.walls.push({x:5,y:8})
-Grid.walls.push({x:6,y:4})
-Grid.walls.push({x:7,y:4})
+var field=new Grid(10,10);
+field.walls.push({x:4,y:3})
+field.walls.push({x:4,y:4})
+field.walls.push({x:4,y:5})
+field.walls.push({x:4,y:6})
+field.walls.push({x:4,y:7})
+field.walls.push({x:5,y:4})
+field.walls.push({x:5,y:8})
+field.walls.push({x:6,y:4})
+field.walls.push({x:7,y:4})
 var start={x:3,y:5}
 var end={x:5,y:5}
-var x=bfs(Grid,start,end);
+var x=bfs(field,start,end);
 console.log(x)
 
 console.log(backtrace(x,start,end))
