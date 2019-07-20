@@ -24,7 +24,19 @@ function remove_field(doc_name,field_name){
 update(doc_name,{[field_name]:FieldValue.delete()})
 }
 
+function get(name){
+db.collection('users').doc(name).get().then(doc => {
+    if (!doc.exists) {
+      console.log('No such document!');
+    } else {
+      console.log('Document data:', doc.data());
+    }
+  })
+}
+
 create("Bob",{name:"Bob",pass_hash:"e10adc3949ba59abbe56e057f20f883e",role:"user"});
 update("Bob",{role:"Admin"});
 remove_field("Bob","role");
+get("Bob");
 delete_doc("Bob");
+
