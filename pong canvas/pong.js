@@ -1,5 +1,3 @@
-var rightPressed;
-var leftPressed;
 var upPressed;
 var downPressed;
 const canvas = document.getElementById("test");
@@ -7,9 +5,9 @@ const ctx = canvas.getContext('2d');
 var ball={
     x : canvas.width/2,
     y : canvas.height/2,
-    speed: -5,
-    velocity_x:5,
-    velocity_y:5,
+    speed: 10,
+    velocity_x:-10,
+    velocity_y:0,
     radius:8
 }
 
@@ -18,7 +16,8 @@ x:canvas.width-10 -(10),
 y:(canvas.height/2)-(100/2),
 speed:30,
 width:10,
-height:100
+height:100,
+score:0
 }
 
 var user_paddle={
@@ -26,7 +25,8 @@ x:10,
 y:canvas.height/2-(100/2),
 speed:30,
 width:10,
-height:100
+height:100,
+score:0
 }
 
 function keyDownHandler(e) {
@@ -36,12 +36,6 @@ function keyDownHandler(e) {
             break;
         case 83:
             downPressed = true;
-            break;
-        case 65:
-            leftPressed = true;
-            break;
-        case 68:
-            rightPressed = true;
             break;
     }
 }
@@ -53,12 +47,6 @@ function keyUpHandler(e) {
             break;
         case 83:
             downPressed = false;
-            break;
-        case 65:
-            leftPressed = false;
-            break;
-        case 68:
-            rightPressed = false;
             break;
     }
 }
@@ -80,9 +68,25 @@ function drawCenterLine(){
 }
 function isBallonScreen(){
     if(ball.x-10>canvas.width || ball.x+10<0){
-      ball.x = canvas.width/2;
-      ball.y = canvas.height/2;
+         if(ball.x-10>canvas.width){
+        user_paddle.score++;
     }
+    if( ball.x+10<0){
+        comp_paddle.score++;
+    }
+
+      ball={
+    x : canvas.width/2,
+    y : canvas.height/2,
+    speed: 10,
+    velocity_x:ball.velocity_x,
+    velocity_y:0,
+    radius:8
+}   
+
+
+    }
+
 }
 
 function collision(paddle){
@@ -99,17 +103,16 @@ function collision(paddle){
      p.right_x=paddle.x+paddle.width
 
     if((p.left_x<=b.right_x)&&(p.right_x>=b.left_x)&&(p.top_y <= b.bottom_y)&&(p.bottom_y >= b.top_y)){
-       ball.speed*=-1
+        let point_of_collision=(ball.y - (paddle.y + paddle.height/2));
+        point_of_collision = point_of_collision/ (paddle.height/2);
+        let angle = (Math.PI/4) * point_of_collision;
+        let direction = (ball.x + ball.radius < canvas.width/2) ? 1 : -1;
+        ball.velocity_x = direction * ball.speed * Math.cos(angle);
+        ball.velocity_y = ball.speed * Math.sin(angle);
      // alert(1)
     }
 }
 function handle_controls(){
-     if (rightPressed) {
-        user_paddle.x += 5;
-    }
-    if (leftPressed) {
-        user_paddle.x -= 5;
-    }
     if (upPressed) {
         user_paddle.y -= 5;
     }
@@ -122,7 +125,9 @@ function drawRect(x, y, w, h, color) {
     ctx.fillRect(x, y, w, h);
 }
  
+function draw_score(){
 
+}
 function game() {
     let paddle_to_check;
     window.requestAnimationFrame(game);
@@ -131,21 +136,27 @@ function game() {
     drawRect(user_paddle.x, user_paddle.y, user_paddle.width, user_paddle.height, "#FFF");
     drawBall();
     drawCenterLine();
-    ctx .font = "30px Arial";
-ctx .fillText("Hello World", 10, 50);
-    ball.x+=ball.speed;
+    ctx.font = "30px FR73PixelW00-Regular";
+    ctx.fillText(user_paddle.score, canvas.width/2-50, canvas.height-15);
+    ctx.fillText(comp_paddle.score, canvas.width/2+31, canvas.height-15);
+    ball.x+=ball.velocity_x;
+    ball.y+=ball.velocity_y;
     if(ball.x+ball.radius<canvas.width/2){
        paddle_to_check=user_paddle
     }else{
         paddle_to_check=comp_paddle
     }
+    if(ball.y + ball.radius > canvas.height||  ball.y - ball.radius < 0 ){
+        ball.velocity_y = -ball.velocity_y;
+    }
+    comp_paddle.y=  0.9*(ball.y-comp_paddle.height/2)
      collision(paddle_to_check)
     isBallonScreen()
    handle_controls();
 
     if (user_paddle.x >= canvas.width) {
         user_paddle.x = -100;
-    } else if (user.x <= -100) {
+    } else if (user_paddle.x <= -100) {
         user_paddle.x = canvas.width;
     }
     if (user_paddle.y >= canvas.height) {
