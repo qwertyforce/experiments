@@ -13,7 +13,7 @@ class Game {
             if (this.state[i][0] === this.state[i][1] && this.state[i][0] === this.state[i][2] && this.state[i][0] !== 0) {
                 return true
             }
-            if (this.state[0][i] === this.state[1][i] && this.state[i][i] === this.state[2][i] && this.state[0][i] !== 0) {
+            if (this.state[0][i] === this.state[1][i] && this.state[0][i] === this.state[2][i] && this.state[0][i] !== 0) {
                 return true
             }
         }
@@ -40,7 +40,7 @@ class Game {
         }
         this.state[y][x] = this.player;
         this.player *= -1;
-        var index = this.available_actions.indexOf(n);
+        let index = this.available_actions.indexOf(parseInt(n));
         this.available_actions.splice(index, 1)
     }
 }
@@ -70,7 +70,7 @@ class q_learning_player {
         this.epsilon = 1.0;
         this.max_epsilon = 1.0;
         this.min_epsilon = 0.01;
-        this.decay_rate = 0.0001;
+        this.decay_rate = 0.000001;
         this.max_actions_n = 9;
 
         this.last_state;
@@ -146,19 +146,19 @@ function train(agent) {
                 debugger;
             }
 
-            if (game.state.toString() === "0,-1,1,0,0,1,0,0,-1" ) {
-                debugger;
-            }
+            // if (game.state.toString() === "0,-1,1,0,0,1,0,0,-1") {
+            //     debugger;
+            // }
             game.make_move(Math.trunc(move / 3), move % 3, move);
-            var win_detected=game.check_win();
-            var draw_detected=game.is_draw();
-            if (win_detected|| draw_detected) {
+            var win_detected = game.check_win();
+            var draw_detected = game.is_draw();
+            if (win_detected || draw_detected) {
                 if (win_detected) {
                     agent.update_q_table(game.state.toString(), -game.player)
                     break;
                 } else {
-                   agent.update_q_table(game.state.toString(), 0.5)
-                   break;
+                    agent.update_q_table(game.state.toString(), 0.5)
+                    break;
                 }
 
             } else {
@@ -170,5 +170,24 @@ function train(agent) {
     }
 }
 
+function play(agent) {
+    let first_player;
+    Math.floor(Math.random() * 2) === 0 ? first_player = 1 : first_player = -1
+    var game = new Game(first_player);
+    while (!game.check_win() && !game.is_draw()) {
+        let move;
+        if (game.player === 1) {
+            move = best_action(agent.q[game.state], game.available_actions)
+        } else {
+            move = prompt("Choose move: "+ game.available_actions.toString())
+        }
+        console.log(move)
+        game.make_move(Math.trunc(move / 3), move % 3, move);
+    }
+    console.log(game)
+    console.log(game.check_win())
+    console.log(game.is_draw())
+}
 var player = new q_learning_player();
 train(player)
+console.log(`q length= ${Object.keys(player.q).length}`)
