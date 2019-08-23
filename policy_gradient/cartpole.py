@@ -2,19 +2,39 @@ import numpy as np
 import gym
 import sys
 import tensorflow as tf 
+import matplotlib
+import matplotlib.pyplot as plt
 model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(2, activation='softmax')
 ])
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01)
 #compute_loss = tf.keras.losses.MSE
-#compute_loss = tf.keras.losses.BinaryCrossentropy()
-compute_loss = tf.keras.losses.CategoricalCrossentropy()
+compute_loss = tf.keras.losses.BinaryCrossentropy()
+#compute_loss = tf.keras.losses.CategoricalCrossentropy()
 model.summary()
-def reset_grad_buffer(grad_buffer):
-    for ix,grad in enumerate(grad_buffer):
-        grad_buffer[ix] = grad * 0
-    return grad_buffer
+episode_n=[]
+mean_score=[]
+def update_policy():
+ print(len(replay_buffer))
+ # exit()
+ losses=[]
+ with tf.GradientTape() as tape:
+  for x in replay_buffer:
+   for state,action,reward in x:
+     logits = model(state)
+     if(action==0):
+       loss = compute_loss([[1,0]], logits)
+     else:
+       loss = compute_loss([[0,1]], logits)
+     losses.append(loss*reward)
+  losses=tf.math.reduce_mean(losses)
+  grads = tape.gradient(losses, model.trainable_variables)
+  # print(grads)
+  # exit()
+  optimizer.apply_gradients(zip(grads, model.trainable_variables))
+ # print(grads)
+ # exit()
 
 def discount_normalize_rewards(r, gamma = 0.99):
     discounted_r = np.zeros_like(r)
@@ -29,11 +49,10 @@ def discount_normalize_rewards(r, gamma = 0.99):
 env = gym.make('CartPole-v0')
 env.seed(1)
 #env._max_episode_steps = 1000
-episodes = 500
+episodes = 1000
 batch_size = 10
-
-grad_buffer = model.trainable_variables
-reset_grad_buffer(grad_buffer)
+score=0
+replay_buffer=[]
 for e in range(episodes):
   
   state = env.reset()
@@ -42,33 +61,69 @@ for e in range(episodes):
   episode_score = 0
   done = False 
   while not done:
-    with tf.GradientTape() as tape:
-      #forward pass
-      state = state.reshape([1,4])
-      logits = model(state)
-      a_dist = logits.numpy()
-      # Choose random action with p = action 
-      a = np.random.choice(a_dist[0],p=a_dist[0])
-      a, = np.where(a_dist[0] == a)
-      a=a[0]   #need numpy int64
-      if(a==0):
-      	loss = compute_loss([[1,0]], logits)
-      else:
-      	loss = compute_loss([[0,1]], logits)
+    state = state.reshape([1,4])
+    logits = model(state)
+    # print(logits)
+    # print(state)
+    # state = state.reshape([1,1,4])
+    # print(state)
+    # state=[[[ 0.03073904,0.00145001,-0.03088818,-0.03131252]],[[ 0.03073904,0.00145001,-0.03088818,-0.03131252]]]
+    # print(np.array(state).shape)
+    # print(model.predict(np.array(state),2))
+    # exit()
+    a_dist = logits.numpy()
+    # Choose random action with p = action 
+    a = np.random.choice(a_dist[0],p=a_dist[0])
+    a, = np.where(a_dist[0] == a)
+    a=a[0]
+    #need numpy int64
+    # if(a==0):
+    # 	loss = compute_loss([[1,0]], logits)
+    # else:
+    # 	loss = compute_loss([[0,1]], logits)
     # make the choosen action 
-    state, reward, done, _ = env.step(a)
+    next_state, reward, done, _ = env.step(a)
     episode_score +=reward
-    grads = tape.gradient(loss, model.trainable_variables)
-    episode_memory.append([grads,reward])
+    episode_memory.append([state,a,reward])
+    state=next_state
+  episode_memory=np.array(episode_memory)
+  episode_memory[:,2] = discount_normalize_rewards(episode_memory[:,2])
+  replay_buffer.append(episode_memory)
+  score+=episode_score
   
-  episode_memory = np.array(episode_memory)
-  episode_memory[:,1] = discount_normalize_rewards(episode_memory[:,1])
-  for grads, r in episode_memory:
-    for ix,grad in enumerate(grads):
-      grad_buffer[ix] += grad*r
+  # 
+  # print(replay_buffer[:,2])
+  # exit()
 
-  if e % batch_size == 0:
-  	print("Policy Updated")
-  	optimizer.apply_gradients(zip(grad_buffer, model.trainable_variables))
-  	reset_grad_buffer(grad_buffer)  
+  # with tf.GradientTape() as tape:
+  #   losses=[]
+  #   for state,action,reward in replay_buffer:
+  #     logits = model(state)
+  #     if(action==0):
+  #       loss = compute_loss([[1,0]], logits)
+  #     else:
+  #       loss = compute_loss([[0,1]], logits)
+  #     losses.append(loss*reward)
+  #   print(losses)
+  #   exit()
+  #   losses=-tf.reduce_sum(losses)
+  #   grads = tape.gradient(loss, model.trainable_variables)
+  #   print(grads)
+  #   exit()
   print("Episode  {}  Score  {}".format(e, episode_score))
+  if (e+1) % batch_size == 0:
+    episode_n.append(e+1)
+    mean_score.append(score/10)
+    print("Episode  mean  score  {}".format(score/10))
+    update_policy()
+    replay_buffer=[]
+    score=0
+    print("==Policy Updated==")
+
+fig, ax = plt.subplots()
+ax.plot(episode_n, mean_score)
+ax.set(xlabel='episode n', ylabel='mean score',title=':(')
+ax.grid()
+fig.savefig("test.png")
+plt.show()
+  
