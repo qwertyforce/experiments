@@ -9,9 +9,6 @@ model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(2, activation='softmax')
 ])
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01)
-#compute_loss = tf.keras.losses.MSE
-compute_loss = tf.keras.losses.BinaryCrossentropy()
-#compute_loss = tf.keras.losses.CategoricalCrossentropy()
 model.summary()
 episode_n=[]
 mean_score=[]
@@ -19,19 +16,20 @@ def update_policy():
  print(len(replay_buffer))
  # exit()
  losses=[]
+ losses2=[]
  with tf.GradientTape() as tape:
   for x in replay_buffer:
    for state,action,reward in x:
      logits = model(state)
-     if(action==0):
-       loss = compute_loss([[1,0]], logits)
-     else:
-       loss = compute_loss([[0,1]], logits)
-     losses.append(loss*reward)
-  losses=tf.math.reduce_mean(losses)
+     # if(action==0):
+     #   loss = compute_loss([[1,0]], logits)
+     # else:
+     #   loss = compute_loss([[0,1]], logits)
+     losses.append(-tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))*reward)
+  losses=tf.math.reduce_sum(losses)
+  # losses=tf.math.reduce_sum(losses)
+  losses/=10
   grads = tape.gradient(losses, model.trainable_variables)
-  # print(grads)
-  # exit()
   optimizer.apply_gradients(zip(grads, model.trainable_variables))
  # print(grads)
  # exit()
@@ -48,8 +46,8 @@ def discount_normalize_rewards(r, gamma = 0.99):
     return discounted_r
 env = gym.make('CartPole-v0')
 env.seed(1)
-#env._max_episode_steps = 1000
-episodes = 1000
+# env._max_episode_steps = 1000
+episodes = 500
 batch_size = 10
 score=0
 replay_buffer=[]
@@ -110,7 +108,7 @@ for e in range(episodes):
   #   grads = tape.gradient(loss, model.trainable_variables)
   #   print(grads)
   #   exit()
-  print("Episode  {}  Score  {}".format(e, episode_score))
+  print("Episode  {}  Score  {}".format(e+1, episode_score))
   if (e+1) % batch_size == 0:
     episode_n.append(e+1)
     mean_score.append(score/10)

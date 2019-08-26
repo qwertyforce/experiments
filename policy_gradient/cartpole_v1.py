@@ -32,8 +32,8 @@ def discount_normalize_rewards(r, gamma = 0.99):
     return discounted_r
 env = gym.make('CartPole-v0')
 env.seed(1)
-#env._max_episode_steps = 1000
-episodes = 1000
+# env._max_episode_steps = 1000
+episodes = 500
 batch_size = 10
 score=0
 grad_buffer = model.trainable_variables
@@ -55,10 +55,11 @@ for e in range(episodes):
       a = np.random.choice(a_dist[0],p=a_dist[0])
       a, = np.where(a_dist[0] == a)
       a=a[0]   #need numpy int64
-      if(a==0):
-      	loss = compute_loss([[1,0]], logits)
-      else:
-      	loss = compute_loss([[0,1]], logits)
+      # if(a==0):
+      # 	loss = compute_loss([[1,0]], logits)
+      # else:
+      # 	loss = compute_loss([[0,1]], logits)
+      loss=-tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(a)))
     # make the choosen action 
     state, reward, done, _ = env.step(a)
     episode_score +=reward
