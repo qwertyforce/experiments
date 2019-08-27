@@ -8,6 +8,11 @@ model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(2, activation='softmax')
 ])
+
+model2 = tf.keras.models.Sequential([
+  tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
+  tf.keras.layers.Dense(1)
+])
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01)
 model.summary()
 episode_n=[]
@@ -17,7 +22,7 @@ def update_policy():
  # exit()
  losses=[]
  losses2=[]
- with tf.GradientTape() as tape:
+ with tf.GradientTape(persistent=True) as tape:
   for x in replay_buffer:
    for state,action,reward in x:
      logits = model(state)
@@ -25,12 +30,21 @@ def update_policy():
      #   loss = compute_loss([[1,0]], logits)
      # else:
      #   loss = compute_loss([[0,1]], logits)
+     value=model2(state)
+     losses2.append(tf.keras.losses.MSE(reward,value))
+     reward=reward-value
      losses.append(-tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))*reward)
+
   losses=tf.math.reduce_sum(losses)
-  # losses=tf.math.reduce_sum(losses)
+  losses2=tf.math.reduce_sum(losses2)
   losses/=10
-  grads = tape.gradient(losses, model.trainable_variables)
-  optimizer.apply_gradients(zip(grads, model.trainable_variables))
+  losses2/=10
+  # print(losses2)
+  # losses=tf.math.reduce_sum(losses,losses2)
+ grads = tape.gradient(losses, model.trainable_variables)
+ optimizer.apply_gradients(zip(grads, model.trainable_variables))
+ grads2 = tape.gradient(losses2, model2.trainable_variables)
+ optimizer.apply_gradients(zip(grads2, model2.trainable_variables))
  # print(grads)
  # exit()
 
@@ -88,26 +102,7 @@ for e in range(episodes):
   episode_memory[:,2] = discount_normalize_rewards(episode_memory[:,2])
   replay_buffer.append(episode_memory)
   score+=episode_score
-  
-  # 
-  # print(replay_buffer[:,2])
-  # exit()
 
-  # with tf.GradientTape() as tape:
-  #   losses=[]
-  #   for state,action,reward in replay_buffer:
-  #     logits = model(state)
-  #     if(action==0):
-  #       loss = compute_loss([[1,0]], logits)
-  #     else:
-  #       loss = compute_loss([[0,1]], logits)
-  #     losses.append(loss*reward)
-  #   print(losses)
-  #   exit()
-  #   losses=-tf.reduce_sum(losses)
-  #   grads = tape.gradient(loss, model.trainable_variables)
-  #   print(grads)
-  #   exit()
   print("Episode  {}  Score  {}".format(e+1, episode_score))
   if (e+1) % batch_size == 0:
     episode_n.append(e+1)
