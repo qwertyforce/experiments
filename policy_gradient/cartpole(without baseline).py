@@ -49,7 +49,7 @@ def discount_normalize_rewards(r, gamma = 0.99):
     return discounted_r
 env = gym.make('CartPole-v0')
 env.seed(1)
-# env._max_episode_steps = 1000
+#env._max_episode_steps = 1000
 episodes = 500
 batch_size = 10
 score=0
@@ -106,6 +106,6 @@ fig, ax = plt.subplots()
 ax.plot(episode_n, mean_score)
 ax.set(xlabel='episode n', ylabel='mean score',title=':(')
 ax.grid()
-fig.savefig("test.png")
+fig.savefig("test2.png")
 plt.show()
   
