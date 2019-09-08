@@ -19,7 +19,7 @@ critic_model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Ad
 
 env = gym.make('CartPole-v0')
 env.seed(1)
-episodes = 500
+episodes = 1000
 score=0
 episode_n=[]
 mean_score=[]
