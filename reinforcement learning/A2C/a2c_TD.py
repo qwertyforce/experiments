@@ -25,7 +25,6 @@ episode_n=[]
 mean_score=[]
 discount_factor=0.99
 max_score=200
-FAIL_PENALTY=-100
 
 def train(previous_state, action, reward, current_state, done):
     previous_state_predicted_value=critic_model(previous_state)
@@ -65,7 +64,7 @@ for e in range(episodes):
     next_state = next_state.reshape([1,4])
     episode_score +=reward
     if done and not(episode_score==max_score):
-    	reward=FAIL_PENALTY
+    	reward=-30
     train(state, a, reward, next_state, done)
     state=next_state
   score+=episode_score

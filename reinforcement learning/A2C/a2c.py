@@ -36,8 +36,6 @@ episode_n=[]
 mean_score=[]
 discount_factor=0.99
 max_score=200
-FAIL_PENALTY=-100
-
 
 def train(buff):
     previous_states= []
