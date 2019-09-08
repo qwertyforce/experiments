@@ -29,7 +29,7 @@ def update_policy():
      losses.append(-tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))*reward)
 
   losses=tf.math.reduce_sum(losses)
-  losses/=10
+  losses/=batch_size
   # print(losses2)
   # losses=tf.math.reduce_sum(losses,losses2)
  grads = tape.gradient(losses, model.trainable_variables)
@@ -95,8 +95,8 @@ for e in range(episodes):
   print("Episode  {}  Score  {}".format(e+1, episode_score))
   if (e+1) % batch_size == 0:
     episode_n.append(e+1)
-    mean_score.append(score/10)
-    print("Episode  mean  score  {}".format(score/10))
+    mean_score.append(score/batch_size)
+    print("Episode  mean  score  {}".format(score/batch_size))
     update_policy()
     replay_buffer=[]
     score=0
