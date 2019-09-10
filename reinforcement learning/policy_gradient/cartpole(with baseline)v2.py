@@ -23,22 +23,37 @@ def update_policy():
  losses=[]
  losses2=[]
  with tf.GradientTape(persistent=True) as tape:
-  for x in replay_buffer:
-   for state,action,reward in x:
-     logits = model(state)
-     # if(action==0):
-     #   loss = compute_loss([[1,0]], logits)
-     # else:
-     #   loss = compute_loss([[0,1]], logits)
-     value=model2(state)
-     losses2.append(tf.keras.losses.MSE(reward,value))
-     reward=reward-value
-     losses.append(-tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))*reward)
+   for x in replay_buffer:
+    states=np.array(x[:,0])
+    actions=x[:,1]
+    rewards=x[:,2]
+    y=[]
+    for st in states:
+      y.append(st[0])
+    states=np.array(y)
 
-  losses=tf.math.reduce_sum(losses)
-  losses2=tf.math.reduce_sum(losses2)
-  losses/=batch_size
-  losses2/=batch_size
+    logits = model(states)
+    values=model2(states)
+   
+    rewards=np.vstack(rewards)
+    rewards=tf.convert_to_tensor(rewards, dtype=tf.float32)
+
+    losses2.extend(tf.keras.losses.MSE(rewards,values))
+    
+    rewards=rewards-values
+    indices=[]
+    for x in range(len(states)):
+      indices.append([x,actions[x]])
+
+    rewards=tf.squeeze(rewards)
+
+    neg_log_prob=-tf.math.log(tf.gather_nd(logits,tf.convert_to_tensor(indices)))
+    losses.extend(tf.math.multiply(neg_log_prob,tf.convert_to_tensor(rewards)))
+
+   losses=tf.math.reduce_sum(losses)
+   losses2=tf.math.reduce_sum(losses2)
+   losses/=batch_size
+   losses2/=batch_size
   # print(losses2)
   # losses=tf.math.reduce_sum(losses,losses2)
  grads = tape.gradient(losses, model.trainable_variables)
@@ -117,6 +132,6 @@ fig, ax = plt.subplots()
 ax.plot(episode_n, mean_score)
 ax.set(xlabel='episode n', ylabel='mean score',title=':(')
 ax.grid()
-fig.savefig("test2.png")
+fig.savefig("test.png")
 plt.show()
   

@@ -9,16 +9,44 @@ actor_model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(2, activation='softmax')
 ])
-actor_model.compile(loss='categorical_crossentropy',optimizer=tf.keras.optimizers.Adam(learning_rate = 0.001))
+# @tf.function
+def losss(state,action,advantage):
+   # ratio = tf.exp(pi.log_prob(self.tfa) - oldpi.log_prob(self.tfa))
+   logits=actor_model(state)
+   prob=tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))
+   logits2=old_actor_model(state)
+   old_prob=tf.math.log(tf.gather(tf.squeeze(logits2),tf.convert_to_tensor(action)))
+   ratio = prob / old_prob
+   clip_prob = tf.clip_by_value(ratio, 1.-e_clip, 1.+e_clip)
+   return -tf.reduce_mean(tf.minimum(tf.multiply(ratio, advantage), tf.multiply(clip_prob, advantage)))
+# actor_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate = 0.001))
+# print(actor_model.trainable_variables)
+optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
+old_actor_model = tf.keras.models.Sequential([
+  tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu', trainable=False),
+  tf.keras.layers.Dense(2, activation='softmax', trainable=False)
+])
+e_clip=0.2
+# x=losss(np.array([[1,1,1,1]]),[1,1])
+# print(x)
+# exit()
+def upd_old_policy():
+  weights_actor_model = actor_model.get_weights()
+  old_actor_model.set_weights(weights_actor_model)
+
 
 critic_model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(1)
 ])
+
+
+
 critic_model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate = 0.005))
 
 def discount_normalize_rewards(running_add,r, gamma = 0.99):
     discounted_r = np.zeros_like(r)
+    running_add = 0
     for t in reversed(range(0, r.size)):
         running_add = running_add * gamma + r[t]
         discounted_r[t] = running_add
@@ -35,13 +63,19 @@ episode_n=[]
 mean_score=[]
 discount_factor=0.99
 max_score=200
+Actor_update_steps = 10
+Critic_update_steps = 10
+
 
 def train(buff):
+    upd_old_policy()
     previous_states= []
     real_previous_values=[]
     advantages=[]
+    actions=[]
 
     for previous_state, action, reward, current_state, done in buff:
+        actions.append(action)
         previous_states.append(previous_state)
         previous_state_predicted_value=critic_model(previous_state)
         if not done:
@@ -58,11 +92,25 @@ def train(buff):
     previous_states=np.array(previous_states)
     real_previous_values=np.array(real_previous_values)
     advantages=np.array(advantages)
+    for _ in range(Actor_update_steps):
+      losses=[]
+      with tf.GradientTape() as tape:
+        for x in range(len(buff)):
+          state=previous_states[x]
+          action=actions[x]
+          advantage=advantages[x]
+          losses.append(losss(state,action,advantage))
+        losses=tf.math.reduce_sum(losses)
+        losses/=len(buff)
+        grads = tape.gradient(losses, actor_model.trainable_variables)
+        optimizer.apply_gradients(zip(grads, actor_model.trainable_variables))
+
     
+
     # actor_model.train_on_batch(previous_states, advantages)
     # critic_model.train_on_batch(previous_states, real_previous_values)
-    actor_model.fit(previous_states, advantages, epochs=1, verbose=0,batch_size=len(buff))
-    critic_model.fit(previous_states, real_previous_values, epochs=1,verbose=0,batch_size=len(buff))
+    # actor_model.fit(previous_states,[actions,advantages] , epochs=Actor_update_steps, verbose=0,batch_size=len(buff))
+    critic_model.fit(previous_states, real_previous_values, epochs=Critic_update_steps,verbose=0,batch_size=len(buff))
     
     
 	
@@ -77,6 +125,7 @@ for e in range(episodes):
     state = state.reshape([1,4])
     logits = actor_model(state)
     a_dist = logits.numpy()
+    print(a_dist)
     # Choose random action with p = action 
     a = np.random.choice(a_dist[0],p=a_dist[0])
     a, = np.where(a_dist[0] == a)
