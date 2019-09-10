@@ -9,15 +9,17 @@ actor_model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(2, activation='softmax')
 ])
-# @tf.function
+#@tf.function
+e_clip=0.2
 def losss(state,action,advantage):
-   # ratio = tf.exp(pi.log_prob(self.tfa) - oldpi.log_prob(self.tfa))
    logits=actor_model(state)
    prob=tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))
    logits2=old_actor_model(state)
    old_prob=tf.math.log(tf.gather(tf.squeeze(logits2),tf.convert_to_tensor(action)))
-   ratio = prob / old_prob
+   ratio = tf.exp(prob- old_prob)
+   # ratio = prob / old_prob
    clip_prob = tf.clip_by_value(ratio, 1.-e_clip, 1.+e_clip)
+   # print(tf.minimum(tf.multiply(ratio, advantage), tf.multiply(clip_prob, advantage)))
    return -tf.reduce_mean(tf.minimum(tf.multiply(ratio, advantage), tf.multiply(clip_prob, advantage)))
 # actor_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate = 0.001))
 # print(actor_model.trainable_variables)
@@ -26,8 +28,8 @@ old_actor_model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu', trainable=False),
   tf.keras.layers.Dense(2, activation='softmax', trainable=False)
 ])
-e_clip=0.2
-# x=losss(np.array([[1,1,1,1]]),[1,1])
+
+# x=losss(np.array([[1,1,1,1],[2,2,2,2]]),1,3)
 # print(x)
 # exit()
 def upd_old_policy():
@@ -39,9 +41,6 @@ critic_model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(1)
 ])
-
-
-
 critic_model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate = 0.005))
 
 def discount_normalize_rewards(running_add,r, gamma = 0.99):
@@ -85,7 +84,7 @@ def train(buff):
         real_previous_value = reward + discount_factor * current_state_predicted_value
         real_previous_values.append(real_previous_value)
         advantage=np.zeros((1,2))
-        advantage[0][action]=real_previous_value - previous_state_predicted_value
+        advantage=real_previous_value - previous_state_predicted_value
         advantages.append(advantage)
 
     
@@ -99,7 +98,10 @@ def train(buff):
           state=previous_states[x]
           action=actions[x]
           advantage=advantages[x]
-          losses.append(losss(state,action,advantage))
+          fff=losss(state,action,advantage)
+          losses.append(fff)
+          # print(losss(state,action,advantage))
+        # print(losses)
         losses=tf.math.reduce_sum(losses)
         losses/=len(buff)
       grads = tape.gradient(losses, actor_model.trainable_variables)
@@ -125,7 +127,7 @@ for e in range(episodes):
     state = state.reshape([1,4])
     logits = actor_model(state)
     a_dist = logits.numpy()
-    print(a_dist)
+    # print(a_dist)
     # Choose random action with p = action 
     a = np.random.choice(a_dist[0],p=a_dist[0])
     a, = np.where(a_dist[0] == a)
