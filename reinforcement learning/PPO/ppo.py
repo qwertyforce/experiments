@@ -102,8 +102,8 @@ def train(buff):
           losses.append(losss(state,action,advantage))
         losses=tf.math.reduce_sum(losses)
         losses/=len(buff)
-        grads = tape.gradient(losses, actor_model.trainable_variables)
-        optimizer.apply_gradients(zip(grads, actor_model.trainable_variables))
+      grads = tape.gradient(losses, actor_model.trainable_variables)
+      optimizer.apply_gradients(zip(grads, actor_model.trainable_variables))
 
     
 
