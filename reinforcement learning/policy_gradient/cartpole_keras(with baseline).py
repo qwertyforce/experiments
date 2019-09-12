@@ -8,57 +8,49 @@ model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(2, activation='softmax')
 ])
+model.compile(loss='categorical_crossentropy',optimizer=tf.keras.optimizers.Adam(learning_rate = 0.01))
 
 model2 = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(1)
 ])
-optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01)
+model2.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(learning_rate = 0.01))
 model.summary()
 episode_n=[]
 mean_score=[]
 def update_policy():
  print(len(replay_buffer))
  # exit()
- losses=[]
- losses2=[]
- with tf.GradientTape(persistent=True) as tape:
-   for x in replay_buffer:
-    states=np.vstack(x[:,0])
-    
-    actions=x[:,1]
-    rewards=x[:,2]
+ all_states=[]
+ all_rewards=[]
+ all_advantages=[]
+ for x in replay_buffer:
+  states=np.vstack(x[:,0])
+  all_states.extend(states)
+  actions=x[:,1]
+  rewards=np.vstack(x[:,2])
+  values=model2(states)
+  all_rewards.extend(rewards)
+  rewards=tf.convert_to_tensor(rewards, dtype=tf.float32)
+  advs=rewards-values
+  for i in range(len(states)):
+    advantage=np.zeros((1,2))
+    advantage[0][actions[i]]=advs[i]
+    all_advantages.append(advantage)
+ 
+ all_states=np.array(all_states)
+ all_states=np.expand_dims(all_states, axis=1)
 
-    logits = model(states)
-    values=model2(states)
-   
-    rewards=np.vstack(rewards)
-    rewards=tf.convert_to_tensor(rewards, dtype=tf.float32)
+ all_rewards=np.array(all_rewards)
+ all_rewards=np.expand_dims(all_rewards, axis=1)
 
-    losses2.extend(tf.keras.losses.MSE(rewards,values))
-    
-    rewards=rewards-values
-    indices=[]
-    for x in range(len(states)):
-      indices.append([x,actions[x]])
+ all_advantages=np.array(all_advantages)
+ # all_advantages=np.expand_dims(all_advantages, axis=1)   
 
-    rewards=tf.squeeze(rewards)
-
-    neg_log_prob=-tf.math.log(tf.gather_nd(logits,tf.convert_to_tensor(indices)))
-    losses.extend(tf.math.multiply(neg_log_prob,tf.convert_to_tensor(rewards)))
-
-   losses=tf.math.reduce_sum(losses)
-   losses2=tf.math.reduce_sum(losses2)
-   losses/=batch_size
-   losses2/=batch_size
-  # print(losses2)
-  # losses=tf.math.reduce_sum(losses,losses2)
- grads = tape.gradient(losses, model.trainable_variables)
- optimizer.apply_gradients(zip(grads, model.trainable_variables))
- grads2 = tape.gradient(losses2, model2.trainable_variables)
- optimizer.apply_gradients(zip(grads2, model2.trainable_variables))
- # print(grads)
+ # print(all_advantages)
  # exit()
+ model.fit(all_states, all_advantages, epochs=1, verbose=0,batch_size=len(all_states))
+ model2.fit(all_states, all_rewards, epochs=1, verbose=0,batch_size=len(all_states))
 
 def discount_normalize_rewards(r, gamma = 0.99):
     discounted_r = np.zeros_like(r)
@@ -87,6 +79,7 @@ for e in range(episodes):
   while not done:
     state = state.reshape([1,4])
     logits = model(state)
+    # env.render()
     # print(logits)
     # print(state)
     # state = state.reshape([1,1,4])
@@ -108,7 +101,7 @@ for e in range(episodes):
     # make the choosen action 
     next_state, reward, done, _ = env.step(a)
     episode_score +=reward
-    episode_memory.append([state.reshape(4,),a,reward])
+    episode_memory.append([state,a,reward])
     state=next_state
   episode_memory=np.array(episode_memory)
   episode_memory[:,2] = discount_normalize_rewards(episode_memory[:,2])

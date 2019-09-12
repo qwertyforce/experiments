@@ -19,23 +19,31 @@ critic_model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Ad
 
 def discount_normalize_rewards(running_add,r, gamma = 0.99):
     discounted_r = np.zeros_like(r)
+    # running_add = 0
     for t in reversed(range(0, r.size)):
         running_add = running_add * gamma + r[t]
         discounted_r[t] = running_add
         # print(discounted_r)
     discounted_r -= np.mean(discounted_r)
-    discounted_r /= np.std(discounted_r)
+    discounted_r /= np.std(discounted_r)+1e-8
     return discounted_r
+
+    
+    # if(np.std(discounted_r)==0):
+    #   print(r.zise)
+    #   print(discounted_r)
+    
+    
 
 env = gym.make('CartPole-v0')
 env.seed(1)
-episodes = 1000
+episodes = 500
 score=0
 episode_n=[]
 mean_score=[]
 discount_factor=0.99
 max_score=200
-
+batch_size=64
 def train(buff):
     previous_states= []
     real_previous_values=[]
@@ -43,11 +51,13 @@ def train(buff):
 
     for previous_state, action, reward, current_state, done in buff:
         previous_states.append(previous_state)
-        previous_state_predicted_value=critic_model(previous_state)
+        
         if not done:
-            current_state_predicted_value=critic_model(current_state)
+          current_state_predicted_value=critic_model(current_state)
         else:
-            current_state_predicted_value=0
+          current_state_predicted_value=0
+
+        previous_state_predicted_value=critic_model(previous_state)
         real_previous_value = reward + discount_factor * current_state_predicted_value
         real_previous_values.append(real_previous_value)
         advantage=np.zeros((1,2))
@@ -58,8 +68,7 @@ def train(buff):
     previous_states=np.array(previous_states)
     real_previous_values=np.array(real_previous_values)
     advantages=np.array(advantages)
-    # print(advantages)
-    # exit()
+    
     # actor_model.train_on_batch(previous_states, advantages)
     # critic_model.train_on_batch(previous_states, real_previous_values)
     actor_model.fit(previous_states, advantages, epochs=1, verbose=0,batch_size=len(buff))
@@ -86,14 +95,18 @@ for e in range(episodes):
     next_state = next_state.reshape([1,4])
     episode_score +=reward
 
-    # if done and not(episode_score==max_score):
-    # 	running_add=-30
+    if done and not(episode_score==max_score):
+    	running_add=-30
 
-    episode_memory.append([state, a, reward, next_state, done])
+    episode_memory.append([state, a, reward, next_state,done])
+    if (len(episode_memory)==batch_size or done):
+      # running_add=critic_model(next_state)
+      # running_add=running_add.numpy()[0][0]
+      episode_memory=np.array(episode_memory)
+      episode_memory[:,2] = discount_normalize_rewards(running_add,episode_memory[:,2])
+      train(episode_memory)
+      episode_memory=[]
     state=next_state
-  episode_memory=np.array(episode_memory)
-  episode_memory[:,2] = discount_normalize_rewards(running_add,episode_memory[:,2])
-  train(episode_memory)
   score+=episode_score
 
   print("Episode  {}  Score  {}".format(e+1, episode_score))
@@ -108,5 +121,5 @@ fig, ax = plt.subplots()
 ax.plot(episode_n, mean_score)
 ax.set(xlabel='episode n', ylabel='score',title=':(')
 ax.grid()
-fig.savefig("test2.png")
+fig.savefig("aw.png")
 plt.show()

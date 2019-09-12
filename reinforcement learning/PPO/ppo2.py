@@ -9,33 +9,18 @@ actor_model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(128,input_shape=(1,4),activation='relu'),
   tf.keras.layers.Dense(2, activation='softmax')
 ])
-#@tf.function
+# @tf.function
 e_clip=0.2
-def losss(states,actions,advantages):
-   indices=[]
-   for x in range(len(states)):
-     indices.append([x,actions[x]])
-
-   logits=actor_model(states)
-
-   probs=tf.math.log(tf.gather_nd(logits,tf.convert_to_tensor(indices)))
-   
-   logits2=old_actor_model(states)
-   old_probs=tf.math.log(tf.gather_nd(logits2,tf.convert_to_tensor(indices)))
-   ratios = tf.exp(probs-old_probs)
-   # print(probs)
-   # print(old_probs)
-   # exit()
+def losss(state,action,advantage):
+   logits=actor_model(state)
+   prob=tf.math.log(tf.gather(tf.squeeze(logits),tf.convert_to_tensor(action)))
+   logits2=old_actor_model(state)
+   old_prob=tf.math.log(tf.gather(tf.squeeze(logits2),tf.convert_to_tensor(action)))
+   ratio = tf.exp(prob- old_prob)
    # ratio = prob / old_prob
-   clip_probs = tf.clip_by_value(ratios, 1.-e_clip, 1.+e_clip)
-   # print(-tf.reduce_mean(tf.minimum(tf.multiply(ratios, advantages), tf.multiply(clip_probs, advantages))))
-   # exit()
+   clip_prob = tf.clip_by_value(ratio, 1.-e_clip, 1.+e_clip)
    # print(tf.minimum(tf.multiply(ratio, advantage), tf.multiply(clip_prob, advantage)))
-   # print(advantages)
-   # print(-tf.minimum(tf.multiply(ratios, advantages), tf.multiply(clip_probs, advantages)))
-   # print("WTDF")
-   return -tf.reduce_sum(tf.minimum(tf.multiply(ratios, advantages), tf.multiply(clip_probs, advantages)))
-
+   return -tf.reduce_mean(tf.minimum(tf.multiply(ratio, advantage), tf.multiply(clip_prob, advantage)))
 # actor_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate = 0.001))
 # print(actor_model.trainable_variables)
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
@@ -98,37 +83,47 @@ def train(buff):
             current_state_predicted_value=0
         real_previous_value = reward + discount_factor * current_state_predicted_value
         real_previous_values.append(real_previous_value)
+        advantage=np.zeros((1,2))
         advantage=real_previous_value - previous_state_predicted_value
         advantages.append(advantage)
 
     
     previous_states=np.array(previous_states)
     real_previous_values=np.array(real_previous_values)
-
-    critic_model.fit(previous_states, real_previous_values, epochs=Critic_update_steps,verbose=0,batch_size=len(buff))
-    advantages=np.vstack(advantages)
-    advantages=tf.squeeze(advantages)
+    advantages=np.array(advantages)
+    # print(previous_states)
     # print(advantages)
     # exit()
-    previous_states=np.vstack(previous_states)
-    # previous_states=np.array([[1,1,1,1],[2,2,2,2],[3,3,3,3]])
+    # print(losss(np.array([[1,1,2,1]]),0,1))
+    # exit()
+    # previous_states=np.array([[[1,1,1,1]],[[2,2,2,2]],[[3,3,3,3]]])
     # actions=[1,1,1]
     # advantages=[7,3,2]
-    # print(previous_states)
-    # exit()
     for _ in range(Actor_update_steps):
+      losses=[]
       with tf.GradientTape() as tape:
-        losses=losss(previous_states,actions,advantages)
+        for x in range(len(previous_states)):
+          state=previous_states[x]
+          action=actions[x]
+          advantage=advantages[x]
+          # print(state)
+          fff=losss(state,action,advantage)
+          losses.append(fff)
+          # print(losss(state,action,advantage))
+        # print(losses)
+        losses=tf.math.reduce_sum(losses)
         losses/=len(buff)
+        # print(losses)
+      # print(losses)
       grads = tape.gradient(losses, actor_model.trainable_variables)
       optimizer.apply_gradients(zip(grads, actor_model.trainable_variables))
-    # exit()
+
     
 
     # actor_model.train_on_batch(previous_states, advantages)
     # critic_model.train_on_batch(previous_states, real_previous_values)
     # actor_model.fit(previous_states,[actions,advantages] , epochs=Actor_update_steps, verbose=0,batch_size=len(buff))
-    # critic_model.fit(previous_states, real_previous_values, epochs=Critic_update_steps,verbose=0,batch_size=len(buff))
+    critic_model.fit(previous_states, real_previous_values, epochs=Critic_update_steps,verbose=0,batch_size=len(buff))
     
     
 	
