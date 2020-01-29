@@ -5,9 +5,11 @@ const session = require('express-session')
 const MongoStore = require('connect-mongo')(session);
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const rateLimit = require("express-rate-limit");
+
 var transporter = nodemailer.createTransport({
- service: 'gmail',
- auth: {
+    service: 'gmail',
+    auth: {
         user: 'auth.test.reg.email@gmail.com',
         pass: 'password'
     }
@@ -19,7 +21,10 @@ const https = require('https');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const SALTROUNDS = 10;
-const {check,validationResult} = require('express-validator');
+const {
+    check,
+    validationResult
+} = require('express-validator');
 var MongoClient = require('mongodb').MongoClient;
 var url = 'mongodb://localhost/';
 var options = {
@@ -36,11 +41,23 @@ client.connect(function(err) {
     }
 });
 
-client.db(db_main).listCollections({name: "not_activated_users"}).toArray().then(function(items) {
-        if(items.length===0){
-        client.db(db_main).collection("not_activated_users").createIndex({"createdAt": 1}, {expireAfterSeconds: 86400}); 
-        }
+client.db(db_main).listCollections({
+    name: "not_activated_users"
+}).toArray().then(function(items) {
+    if (items.length === 0) {
+        client.db(db_main).collection("not_activated_users").createIndex({
+            "createdAt": 1
+        }, {
+            expireAfterSeconds: 86400
+        });
+    }
 });
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -73,21 +90,38 @@ app.listen(port, () => { //Uncomment if you want to use http
 //     }, app).listen(port);
 
 // console.log(`Server is listening on port ${port}`);
-function send_activation_letter(email,link){
- const mailOptions = {
-  from: 'auth.test.reg.email@gmail.com', // sender address
-  to: email, // list of receivers
-  subject: 'Confirmation link', // Subject line
-  html: `<p>Your confirmation link ${link} If it was not you, ignore this email.</p>`// plain text body
-};
-transporter.sendMail(mailOptions, function (err, info) {
-   if(err){
-     console.log(err)
-   }
-   else{
-     console.log(info);
-   }
-});
+function send_activation_letter(email, link) {
+    const mailOptions = {
+        from: 'auth.test.reg.email@gmail.com', // sender address
+        to: email, // list of receivers
+        subject: 'Confirmation link', // Subject line
+        html: `<p>Your confirmation link ${link} If it was not you, ignore this email.</p>` // plain text body
+    };
+    transporter.sendMail(mailOptions, function(err, info) {
+        if (err) {
+            console.log(err)
+        } else {
+            console.log(info);
+        }
+    });
+}
+async function generate_id() {
+    const id = new Promise((resolve, reject) => {
+        crypto.randomBytes(32, async function(ex, buffer) {
+            if (ex) {
+                reject("error");
+            }
+            let id = buffer.toString("base64")
+            let users = await find_user_by_id(id) //check if id exists
+            if (users.length === 0) {
+                resolve(id);
+            } else {
+                let id_1 = await generate_id()
+                resolve(id_1)
+            }
+        });
+    });
+    return id;
 }
 
 async function findDocuments(collection_name, selector) {
@@ -95,9 +129,9 @@ async function findDocuments(collection_name, selector) {
     let result = await collection.find(selector).toArray()
     return result
 }
-async function removeDocument(collection_name,selector) {
-  const collection = client.db(db_main).collection(collection_name);
-  collection.deleteOne(selector)
+async function removeDocument(collection_name, selector) {
+    const collection = client.db(db_main).collection(collection_name);
+    collection.deleteOne(selector)
 }
 
 async function insertDocuments(collection_name, documents) {
@@ -118,6 +152,13 @@ async function find_user_by_email(email) {
     })
     return user
 }
+var x = 0
+async function find_user_by_id(id) {
+    let user = await findDocuments("users", {
+        id: id
+    })
+    return user
+}
 
 async function find_not_activated_user_by_token(token) {
     let user = await findDocuments("not_activated_users", {
@@ -126,11 +167,11 @@ async function find_not_activated_user_by_token(token) {
     return user
 }
 
-async function create_new_user_not_activated(email, pass,token) {
+async function create_new_user_not_activated(email, pass, token) {
     insertDocuments("not_activated_users", [{
         "createdAt": new Date(),
         email: email,
-        token:token,
+        token: token,
         password: pass,
         activated: false
     }])
@@ -138,6 +179,7 @@ async function create_new_user_not_activated(email, pass,token) {
 async function create_new_user_activated(email, pass) {
     insertDocuments("users", [{
         email: email,
+        id: await generate_id(),
         password: pass,
         activated: true
     }])
@@ -146,10 +188,10 @@ async function create_new_user_activated(email, pass) {
 app.get('/', (req, res) => {
     if (req.session.authed !== undefined) {
         res.send('<p>You are logged in!</p>')
-    }else{
+    } else {
         res.redirect('/login')
     }
-    
+
 })
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'))
@@ -162,7 +204,7 @@ app.post('/signup', [
     check('email').isEmail(),
     check('password').isLength({
         min: 6,
-        max:50
+        max: 50
     })
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -176,15 +218,17 @@ app.post('/signup', [
     var users = await find_user_by_email(email);
     if (users.length === 0) { //if no user with this email is registered
         crypto.randomBytes(16, async (err, buf) => {
-          if (err) throw err;
-          let token = buf.toString("base64").replace(/\/|=|[+]/g, '');    //replace / = +  with ''
-          let hashed_pass = await bcrypt.hash(password, SALTROUNDS);
-          // console.log(`hashed_pass: ${hashed_pass}`)
-          create_new_user_not_activated(email, hashed_pass,token)
-          var link=`http://localhost/activate?token=${token}`
-          console.log(link)
-          send_activation_letter(email,link)
-          res.json({message: 'Registered successfully,please confirm your email.'})
+            if (err) throw err;
+            let token = buf.toString("base64").replace(/\/|=|[+]/g, ''); //replace / = +  with ''
+            let hashed_pass = await bcrypt.hash(password, SALTROUNDS);
+            // console.log(`hashed_pass: ${hashed_pass}`)
+            create_new_user_not_activated(email, hashed_pass, token)
+            var link = `http://localhost/activate?token=${token}`
+            console.log(link)
+            send_activation_letter(email, link)
+            res.json({
+                message: 'Registered successfully,please confirm your email.'
+            })
         });
     } else {
         console.log(users)
@@ -198,7 +242,7 @@ app.post('/login', [
     check('email').isEmail(),
     check('password').isLength({
         min: 6,
-        max:50
+        max: 50
     }),
 ], async (req, res) => {
     const MESSAGE_FOR_AUTH_ERROR = "This combination of email and password is not found";
@@ -220,7 +264,7 @@ app.post('/login', [
         if (match) {
             if (users[0].activated === true) {
                 req.session.authed = true;
-                req.session.login = email;
+                req.session.user_id = users[0].id;
                 res.json({
                     message: "Success"
                 })
@@ -238,16 +282,16 @@ app.post('/login', [
 })
 
 app.get('/activate', async (req, res) => {
-    var token=req.query.token;
+    var token = req.query.token;
     console.log(token)
-    if (typeof token == 'string' || token instanceof String){
-           var users = await find_not_activated_user_by_token(token);
-           console.log(users)
-           if(users.length===1){
-            delete_user_by_token(token)   //remove temp account
-            create_new_user_activated(users[0].email,users[0].password)
+    if (typeof token == 'string' || token instanceof String) {
+        var users = await find_not_activated_user_by_token(token);
+        console.log(users)
+        if (users.length === 1) {
+            delete_user_by_token(token) //remove temp account
+            create_new_user_activated(users[0].email, users[0].password)
             res.send('<p>Your account is now activated. Visit <a href="http://localhost/login">http://localhost/login</a> to login in.</p>')
-           }
+        }
     }
 })
 
