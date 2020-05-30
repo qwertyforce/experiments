@@ -9,14 +9,14 @@ class Node {
 class BinarySearchTree {
     constructor() {
         this.root = null;
-        this.node_count=0
-    }
-    
-    isEmpty(){
-        return this.node_count===0
+        this.node_count = 0
     }
 
-    size(){
+    isEmpty() {
+        return this.node_count === 0
+    }
+
+    size() {
         return this.node_count
     }
 
@@ -24,12 +24,12 @@ class BinarySearchTree {
         if (this.root === null) {
             this.root = new Node(value);
         } else {
-            if(this.search(value)===null){
+            if (this.search(value) === null) {
                 this.insertNode(this.root, value);
-            }else{
+            } else {
                 console.log("Element is already in BST")
             }
-            
+
         }
         this.node_count++
     }
@@ -49,12 +49,12 @@ class BinarySearchTree {
             }
         }
     }
-    
-    comparator(node_value,value){
-       return (node_value-value)
+
+    comparator(node_value, value) {
+        return (node_value - value)
     }
- 
-    
+
+
 
     remove(value) {
         this.root = this.removeNode(this.root, value);
@@ -92,8 +92,6 @@ class BinarySearchTree {
         node.value = smallest_node_of_right_subtree.value;
         node.right = this.removeNode(node.right, smallest_node_of_right_subtree.value);
         return node;
-
-
     }
     findMinNode(node) {
         if (node.left === null) {
@@ -128,14 +126,14 @@ class BinarySearchTree {
             console.log(node.value);
         }
     }
-    search(value){
-     return this._search(this.getRootNode(), value)
+    search(value) {
+        return this._search(this.getRootNode(), value)
     }
 
     _search(node, value) {
         if (node === null) {
             return null;
-        } 
+        }
         const cmp = this.comparator(node.value, value)
         if (cmp > 0) {
             return this._search(node.left, value);
@@ -143,9 +141,6 @@ class BinarySearchTree {
         if (cmp < 0) {
             return this._search(node.right, value);
         }
-
         return node;
-        
     }
-
 }
