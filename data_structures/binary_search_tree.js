@@ -1,6 +1,6 @@
 class Node {
-    constructor(data) {
-        this.data = data;
+    constructor(value) {
+        this.value = value;
         this.left = null;
         this.right = null;
     }
@@ -9,62 +9,90 @@ class Node {
 class BinarySearchTree {
     constructor() {
         this.root = null;
+        this.node_count=0
+    }
+    
+    isEmpty(){
+        return this.node_count===0
     }
 
-    insert(data) {
+    size(){
+        return this.node_count
+    }
+
+    insert(value) {
         if (this.root === null) {
-            this.root = new Node(data);
+            this.root = new Node(value);
         } else {
-            this.insertNode(this.root, data);
+            if(this.search(this.root,value)===null){
+                this.insertNode(this.root, value);
+            }else{
+                console.log("Element is already in BST")
+            }
+            
         }
+        this.node_count++
     }
 
-    insertNode(node, data) {
-        if (node.data > data) {
+    insertNode(node, value) {
+        if (node.value > value) {
             if (node.left === null) {
-                node.left = new Node(data);
+                node.left = new Node(value);
             } else {
-                this.insertNode(node.left, data);
+                this.insertNode(node.left, value);
             }
         } else {
             if (node.right === null) {
-                node.right = new Node(data);
+                node.right = new Node(value);
             } else {
-                this.insertNode(node.right, data);
+                this.insertNode(node.right, value);
             }
         }
     }
-
-
-    remove(data) {
-        this.root = this.removeNode(this.root, data);
+    
+    comparator(node_value,value){
+       return (node_value>value)
     }
-    removeNode(node, data) {
+ 
+    
+
+    remove(value) {
+        this.root = this.removeNode(this.root, value);
+    }
+
+    removeNode(node, value) {
         if (node === null) {
             return null;
-        } else if (node.data>data) {
-            node.left = this.removeNode(node.left, data);
-            return node;
-        } else if (node.data < data) {
-            node.right = this.removeNode(node.right, data);
-            return node;
-        } else {
-            if (node.left === null && node.right === null) {
-                node = null;
-                return node;
-            }
-            if (node.left === null) {
-                node = node.right;
-                return node;
-            } else if (node.right === null) {
-                node = node.left;
-                return node;
-            }
-            var aux = this.findMinNode(node.right);
-            node.data = aux.data;
-            node.right = this.removeNode(node.right, aux.data);
+        }
+        const cmp = comparator(node.value, value)
+
+        if (cmp > 0) { // if node value is greater than value we want to remove
+            node.left = this.removeNode(node.left, value);
             return node;
         }
+        if (cmp < 0) { // if node value is less than value we want to remove
+            node.right = this.removeNode(node.right, value);
+            return node;
+        }
+        //when cmp===0 (we found value)
+        if (node.left === null && node.right === null) {  // no children, just delete the node
+            node = null;
+            return node;
+        }
+        if (node.left === null) { // if only right child exists
+            node = node.right;
+            return node;
+        }
+        if (node.right === null) { // if only left child exists
+            node = node.left;
+            return node;
+        }
+        // if left and right children exist
+        const smallest_node_of_right_subtree = this.findMinNode(node.right);
+        node.value = smallest_node_of_right_subtree.value;
+        node.right = this.removeNode(node.right, smallest_node_of_right_subtree.value);
+        return node;
+
 
     }
     findMinNode(node) {
@@ -78,36 +106,36 @@ class BinarySearchTree {
         return this.root;
     }
 
-    inorder(node) {
+    inOrder(node) {
         if (node !== null) {
-            this.inorder(node.left);
-            console.log(node.data);
-            this.inorder(node.right);
+            this.inOrder(node.left);
+            console.log(node.value);
+            this.inOrder(node.right);
         }
     }
 
-    preorder(node) {
+    preOrder(node) {
         if (node != null) {
-            console.log(node.data);
-            this.preorder(node.left);
-            this.preorder(node.right);
+            console.log(node.value);
+            this.preOrder(node.left);
+            this.preOrder(node.right);
         }
     }
-    postorder(node) {
+    postOrder(node) {
         if (node != null) {
-            this.postorder(node.left);
-            this.postorder(node.right);
-            console.log(node.data);
+            this.postOrder(node.left);
+            this.postOrder(node.right);
+            console.log(node.value);
         }
     }
-    search(node, data) {
+    search(node, value) {
         if (node === null) {
             return null;
-        } else if (node.data > data) {
-            return this.search(node.left, data);
+        } else if (node.value > value) {
+            return this.search(node.left, value);
         }
-        else if (node.data < data ) {
-            return this.search(node.right, data);
+        else if (node.value < value ) {
+            return this.search(node.right, value);
         }
         else {
             return node;
