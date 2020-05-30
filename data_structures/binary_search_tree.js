@@ -24,7 +24,7 @@ class BinarySearchTree {
         if (this.root === null) {
             this.root = new Node(value);
         } else {
-            if(this.search(this.root,value)===null){
+            if(this.search(value)===null){
                 this.insertNode(this.root, value);
             }else{
                 console.log("Element is already in BST")
@@ -51,7 +51,7 @@ class BinarySearchTree {
     }
     
     comparator(node_value,value){
-       return (node_value>value)
+       return (node_value-value)
     }
  
     
@@ -64,7 +64,7 @@ class BinarySearchTree {
         if (node === null) {
             return null;
         }
-        const cmp = comparator(node.value, value)
+        const cmp = this.comparator(node.value, value)
 
         if (cmp > 0) { // if node value is greater than value we want to remove
             node.left = this.removeNode(node.left, value);
@@ -128,18 +128,24 @@ class BinarySearchTree {
             console.log(node.value);
         }
     }
-    search(node, value) {
+    search(value){
+     return this._search(this.getRootNode(), value)
+    }
+
+    _search(node, value) {
         if (node === null) {
             return null;
-        } else if (node.value > value) {
-            return this.search(node.left, value);
+        } 
+        const cmp = this.comparator(node.value, value)
+        if (cmp > 0) {
+            return this._search(node.left, value);
         }
-        else if (node.value < value ) {
-            return this.search(node.right, value);
+        if (cmp < 0) {
+            return this._search(node.right, value);
         }
-        else {
-            return node;
-        }
+
+        return node;
+        
     }
 
 }
