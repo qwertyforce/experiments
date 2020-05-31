@@ -9,13 +9,19 @@ let temp=this.elements[a];
 this.elements[a]=this.elements[b];
 this.elements[b]=temp;    
 }
+ build_heap(arr){
+   this.elements=arr
+  for (let index = Math.floor(arr.length/2); index >-1; index--) {
+   this.heapify_down(index)
+  }
 
- heapify_up(i){
-        var parent=this.get_parent(i)
-        if (i<this.elements.length && this.elements[parent] <this.elements[i]){
-            this.swap(i, parent);
-           this.heapify_up(parent);
-        }
+ }
+
+ heapify_up(index){
+       while(index!==0 && this.elements[this.get_parent(index)]<this.elements[index]){
+         this.swap(this.get_parent(index),index)
+         index=this.get_parent(index)
+       }
     }
 
   get_left(i) {
@@ -30,31 +36,32 @@ this.elements[b]=temp;
 
   insert(item){
   this.elements.push(item);
-  var i=this.elements.length-1;
-  this.heapify_up(i)
+  this.heapify_up(this.elements.length-1)
   }
+
   extract_max(){
     this.swap(0,this.elements.length-1)
-    var max=this.elements.pop()
+    const max=this.elements.pop()
     this.heapify_down(0);
     return max;
   }
+
   get_max(){
     return this.elements[0]
   }
-  heapify_down(i){
-        var left =  this.get_left(i);
-        var right =  this.get_right(i);
-        var largest = i;
-        if (left < this.elements.length && this.elements[left] > this.elements[i]){
-            largest = left;
-        }
-        if (right < this.elements.length && this.elements[right] > this.elements[largest]){
-            largest = right;
-        }
-        if (largest != i) {
-            this.swap(i, largest);
-            this.heapify_down(largest);
+
+  heapify_down(index){
+        while(this.elements[this.get_left(index)]!==undefined){
+         let biggerChildIndex=this.get_left(index)
+         if(this.elements[this.get_right(index)] !==undefined && this.elements[this.get_right(index)] > this.elements[this.get_left(index)]){
+          biggerChildIndex=this.get_right(index)
+         }
+         if(this.elements[index]> this.elements[biggerChildIndex]){
+           break;
+         }else{
+           this.swap(index,biggerChildIndex)
+         }
+         index=biggerChildIndex
         }
     }
         
