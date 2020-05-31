@@ -12,7 +12,7 @@ class Heap {
 
   build_heap(arr) {
     this.elements = arr
-    for (let index = Math.floor(arr.length / 2); index > -1; index--) {
+    for (let index = Math.floor(arr.length / 2); index >0 ; index--) {
       this.heapify_down(index)
     }
   }
@@ -31,7 +31,7 @@ class Heap {
   get_right(i) {
     return (2 * i) + 2;
   }
-  
+
   get_parent(i) {
     return Math.floor((i - 1) / 2);
   }
