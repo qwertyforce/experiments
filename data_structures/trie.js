@@ -42,7 +42,6 @@ class Trie{
     }
 
     _find_prefix(node, curr_word) {
-        console.log(node)
         if (node.is_complete_word) {
             this.words.push(curr_word)
         }
