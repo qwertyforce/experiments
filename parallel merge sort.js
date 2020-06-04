@@ -36,11 +36,11 @@ arr[a]=arr[b];
 arr[b]=temp;  
 }
 
-const quick_sort = (arr, start, end) => {
+const merge_sort = (arr, start, end) => {
   if(start < end) {
     let pivot = partition(arr, start, end)
-    quick_sort(arr, start, pivot - 1)
-    quick_sort(arr, pivot + 1, end)
+    merge_sort(arr, start, pivot - 1)
+    merge_sort(arr, pivot + 1, end)
   } 
 }
 
@@ -60,7 +60,7 @@ const partition = (arr, start, end) => {
 }
    if(e.data.job==='sort'){
     var arr = new Uint32Array(e.data.arr)
-    quick_sort(arr,0,arr.length-1)
+    merge_sort(arr,0,arr.length-1)
     postMessage(arr.buffer,[arr.buffer]);
 }else{
       var half_1=new Uint32Array(e.data.arr1)

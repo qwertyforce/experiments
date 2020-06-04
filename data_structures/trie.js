@@ -35,8 +35,6 @@ class Trie{
             }
             node=node.children[chr]
         }
-
-        // const words=[]
         this._find_prefix(node,prefix)
         return this.words
     }

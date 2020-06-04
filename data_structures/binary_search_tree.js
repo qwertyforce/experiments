@@ -100,6 +100,13 @@ class BinarySearchTree {
             return this.findMinNode(node.left);
         }
     }
+    findMaxNode(node) {
+        if (node.right === null) {
+            return node;
+        } else {
+            return this.findMaxNode(node.right);
+        }
+    }
     getRootNode() {
         return this.root;
     }
