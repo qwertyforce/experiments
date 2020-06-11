@@ -1,41 +1,41 @@
 class Node {
     constructor(value) {
-        this.value=value
-        this.children={}
+        this.value = value
+        this.children = {}
         this.is_complete_word = false
     }
-    
+
 }
 
-class Trie{
-    constructor(){
-        this.root=new Node()
-        this.words=[]
+class Trie {
+    constructor() {
+        this.root = new Node()
+        this.words = []
     }
-   
-    insert(word){
-        let node=this.root
-        for (const chr of word) {
-            if(!node.children[chr]){
-                node.children[chr]=new Node(chr)
-            }
-            node=node.children[chr]
-        }
-        node.is_complete_word=true
-    }
-    
 
-    find_prefix(prefix){
-        this.words=[]
-        let node=this.root
+    insert(word) {
+        let node = this.root
+        for (const chr of word) {
+            if (!node.children[chr]) {
+                node.children[chr] = new Node(chr)
+            }
+            node = node.children[chr]
+        }
+        node.is_complete_word = true
+    }
+
+
+    find_prefix(prefix) {
+        this.words = []
+        let node = this.roots
         for (const chr of prefix) {
-            if(!node.children[chr]){
+            if (!node.children[chr]) {
                 console.log("Not found")
                 return false
             }
-            node=node.children[chr]
+            node = node.children[chr]
         }
-        this._find_prefix(node,prefix)
+        this._find_prefix(node, prefix)
         return this.words
     }
 
