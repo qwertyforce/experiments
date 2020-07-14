@@ -17,3 +17,4 @@ function permute(word, start, end) {
 let x = Array.from("ABC")
 const permutations=[]
 permute(x, 0, x.length - 1)
+console.log(permutations)
