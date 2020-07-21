@@ -3,10 +3,10 @@ function three_sum (nums) {
     const result = [];
     
     for(let i = 0; i < nums.length; i++) {
+        let current_number=nums[i]
         let low = i+1;
         let high = nums.length-1;
         let sum = 0;
-        let current_number=nums[i]
         while(low < high) {
             sum =  current_number + nums[low] + nums[high]; 
             if(sum === 0) {
