@@ -43,3 +43,5 @@ for(let i=0;i<10000000;i++){
     let x = dist.sample()
     res[x.value]+=1
 }
+
+//TODO VoseAliasMethod
