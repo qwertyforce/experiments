@@ -140,7 +140,7 @@ function heapify(arr, i, heap_length) {
 
 function heap_sort(arr) {
   buildHeap(arr);
-  var heap_length = arr.length;
+  let heap_length = arr.length;
   for (let i = arr.length - 1; i > 0; i--) {
     swap(arr, 0, i);
     heap_length--;
