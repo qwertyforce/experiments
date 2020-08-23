@@ -27,7 +27,7 @@ class Trie {
 
     find_prefix(prefix) {
         this.words = []
-        let node = this.roots
+        let node = this.root
         for (const chr of prefix) {
             if (!node.children[chr]) {
                 console.log("Not found")
