@@ -10,12 +10,12 @@
  * @return {boolean}
  */
 const reverse_linked_list = function (head) {
-    let prev;
+    let prev=null
     while (head) {
         const next = head.next
         head.next = prev
         prev = head
         head = next
     }
-    return head
+    return prev
 };
