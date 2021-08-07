@@ -3,12 +3,12 @@ class PriorityQueue {
     this.elements = [];
   }
   enqueue(element, priority) {
-    var obj = {
+    const obj = {
       data: element,
       priority: priority
     }
-    var enqueued = false;
-    for (var i = 0; i < this.elements.length; i++) {
+    let enqueued = false;
+    for (let i = 0; i < this.elements.length; i++) {
       if (this.elements[i].priority >= obj.priority) {
         this.elements.splice(i, 0, obj);
         enqueued = true;
@@ -34,8 +34,8 @@ class PriorityQueue {
     return (this.elements.length === 0)
   }
   printQueue() {
-    var str = "Enqueue--->";
-    for (var i = 0; i < this.elements.length; i++) {
+    let str = "Enqueue--->";
+    for (let i = 0; i < this.elements.length; i++) {
       str += ` ${JSON.stringify(this.elements[i])}, `
     }
     str += "->Dequeue--->"
@@ -57,36 +57,32 @@ class Grid {
     return !(this.walls.some((el) => el.x === x && el.y === y))
   }
   neighbors(x, y) {
-    var result = [{ x: x + 1, y: y }, { x: x, y: y - 1 }, { x: x - 1, y: y }, { x: x, y: y + 1 }];
-    result = result.filter((point) => this.in_bounds(point.x, point.y) && this.passable(point.x, point.y))
-    return result
+    const result = [{ x: x + 1, y: y }, { x: x, y: y - 1 }, { x: x - 1, y: y }, { x: x, y: y + 1 }];
+    return result.filter((point) => this.in_bounds(point.x, point.y) && this.passable(point.x, point.y))
   }
   cost(from_point, to_point,) {
     return this.weights[JSON.stringify(from_point.x) + JSON.stringify(from_point.y)][JSON.stringify(to_point.x) + JSON.stringify(to_point.y)]
   }
 }
 
-function dijkstra_search(grid, start, end) {
-  var points_to_visit = new PriorityQueue();
+function ucs(grid, start, end) {
+  const points_to_visit = new PriorityQueue();
   points_to_visit.enqueue(start, 0)
-  var came_from = {};
-  var cost_so_far = {}
-  var new_cost;
+  const came_from = {};
+  const cost_so_far = {}
   came_from[JSON.stringify(start)] = null;
   cost_so_far[JSON.stringify(start)] = 0;
-  var priority;
   while (!(points_to_visit.isEmpty())) {
-    let current_point = points_to_visit.dequeue().data;
+    const current_point = points_to_visit.dequeue().data;
     //console.log(current_point)
     if (current_point.x === end.x && current_point.y === end.y) {
       break;
     }
     for (next of grid.neighbors(current_point.x, current_point.y)) {
-      new_cost = cost_so_far[JSON.stringify(current_point)] + grid.cost(current_point, next)
+      const new_cost = cost_so_far[JSON.stringify(current_point)] + grid.cost(current_point, next)
       if (came_from[JSON.stringify(next)] === undefined || new_cost < cost_so_far[JSON.stringify(next)]) {
         cost_so_far[JSON.stringify(next)] = new_cost;
-        priority = new_cost
-        points_to_visit.enqueue(next, -priority)
+        points_to_visit.enqueue(next, -new_cost) //-new_cost === priority
         came_from[JSON.stringify(next)] = current_point
       }
     }
@@ -97,14 +93,14 @@ function dijkstra_search(grid, start, end) {
 }
 
 function backtrace(came_from, start, end) {
-  var path = [end];
+  const path = [end];
   while (path[path.length - 1] !== null) {
     path.push(came_from[JSON.stringify(path[path.length - 1])])
   }
   return path.reverse()
 }
 
-var field = new Grid(3, 3);        //  3x3 actually(including 0)  
+const field = new Grid(3, 3);        //  3x3 actually(including 0)  
 field.weights["00"] = {
   "01": 1,
   "11": 4,
@@ -143,8 +139,8 @@ field.weights["21"] = {
   "22": 1,
 }
 
-var start = { x: 0, y: 0 }
-var end = { x: 2, y: 2 }
-var x = dijkstra_search(field, start, end)
+const start = { x: 0, y: 0 }
+const end = { x: 2, y: 2 }
+const x = ucs(field, start, end)
 console.log(backtrace(x, start, end))
 
