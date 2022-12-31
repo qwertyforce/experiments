@@ -1,0 +1,29 @@
+import itertools
+from collections import Counter
+import math 
+
+def _mult(eq1, eq2):
+    new_arr = [0]*(len(eq1)+len(eq2)-1)
+    for i in range(len(eq1)):
+        for j in range(len(eq2)):
+            new_arr[i+j]+=eq1[i]*eq2[j]
+    return new_arr
+
+mylist = [x for x in input()]
+c = Counter(mylist)
+number_of_occ= []
+for x in c:
+    number_of_occ.append(c[x])
+equations = []
+for el in number_of_occ:
+    _equation = []
+    for i in range(el+1):
+        _equation.append(1/(math.factorial(i)))
+    equations.append(_equation)
+res = equations[0]
+for i in range(1,len(equations)):
+    res = _mult(res,equations[i])
+ans = 0
+for i in range(1,len(mylist)+1):
+    ans+= res[i]*math.factorial(i)
+print(int(ans))
